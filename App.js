@@ -7,7 +7,6 @@
  */
 
 import React from 'react';
-import * as Sentry from '@sentry/react-native';
 import MyObject from './MyObject.js'
 
 import {
