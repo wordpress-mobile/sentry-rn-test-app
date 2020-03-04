@@ -1,6 +1,10 @@
 package com.mytestapp;
 
+import android.os.Bundle;
+
 import com.facebook.react.ReactActivity;
+
+import io.sentry.core.Sentry;
 
 public class MainActivity extends ReactActivity {
 
@@ -11,5 +15,12 @@ public class MainActivity extends ReactActivity {
   @Override
   protected String getMainComponentName() {
     return "MyTestApp";
+  }
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    Sentry.captureMessage("onCreate()");
   }
 }

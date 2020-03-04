@@ -4,5 +4,7 @@
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
 
-    <application android:usesCleartextTraffic="true" tools:targetApi="28" tools:ignore="GoogleAppIndexingWarning" />
+    <application android:usesCleartextTraffic="true" tools:targetApi="28" tools:ignore="GoogleAppIndexingWarning">
+        <meta-data android:name="io.sentry.dsn" android:value="https://f30b9a387e704eda96b03cf9d8ece0b6@sentry.io/1783191" />
+    </application>
 </manifest>

@@ -8,7 +8,7 @@
 
 import React from 'react';
 import MyObject from './MyObject.js'
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 
 import {
   SafeAreaView,
@@ -17,8 +17,7 @@ import {
   View,
   Text,
   StatusBar,
-  Button,
-  NativeModules,
+  Button
 } from 'react-native';
 
 import {
@@ -46,13 +45,17 @@ const transmitObject = async ( object ) => {
 
   const headers = new Headers()
   headers.append("Content-Type", "application/json")
+  const jsonError = JSON.stringify(object);
 
   const options = {
     method: "POST",
     headers,
     mode: "cors",
-    body: JSON.stringify(object),
+    body: jsonError,
   };
+
+  const CrashLoggingBridge = NativeModules.CrashLoggingBridge;
+  CrashLoggingBridge.logCrash(jsonError);
 
   return fetch("https://en4z0w5kw96y4.x.pipedream.net", options)
 };
