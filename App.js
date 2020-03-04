@@ -8,6 +8,7 @@
 
 import React from 'react';
 import MyObject from './MyObject.js'
+import { Platform } from 'react-native';
 
 import {
   SafeAreaView,
@@ -39,9 +40,9 @@ const extractLocation = (urlLike) => {
   return [parts[1], parts[2] || undefined, parts[3] || undefined];
 };
 
-const transmitErrorStack = async ( stack ) => {
+const transmitObject = async ( object ) => {
 
-  console.log("Transmitting", stack);
+  console.log("Transmitting", object);
 
   const headers = new Headers()
   headers.append("Content-Type", "application/json")
@@ -50,92 +51,75 @@ const transmitErrorStack = async ( stack ) => {
     method: "POST",
     headers,
     mode: "cors",
-    body: JSON.stringify(stack),
+    body: JSON.stringify(object),
   };
 
   return fetch("https://en4z0w5kw96y4.x.pipedream.net", options)
 };
 
+const ErrorParser = {
+    V8_DEBUG: /^(.*)@(\D+:\d*\D+):(\d+):(\d+)$/,
+    V8_PRODUCTION: /^(\w+)@([a-z|\.]+):(\d+):(\d+)$/,
 
-const parseErrorStack = async ( error ) => {
+    HERMES_DEBUG: 'H_DEBUG',
+    HERMES_PRODUCTION: 'H_PROD',
+}
 
-  console.log("\n\n\n----------");
+const isHermesCallStack = function() {
+  const isHermes = () => global.HermesInternal != null;
+  return isHermes();
+};
 
-  console.log("Error: ", error);
-  console.log("Stack: ", error.stack);
+const isHermesDebugCallStack = function() {
+  return __DEV__ && Platform.OS == 'android' && isHermesCallStack();
+};
 
-  const CHROME_IE_STACK_REGEXP = /^\s*at .*(\S+:\d+|\(native\))/m;
+const isHermesProductionCallStack = () => {
+  return !__DEV__ && Platform.OS == 'android' && isHermesCallStack();
+};
 
-  let rawStack = error.stack.split('\n');
+const isV8DebugCallStack = function() {
+  return __DEV__ && Platform.OS == 'android' && ! isHermesCallStack();
+};
 
-  if (isHermesCallStack(rawStack)) {
-    return parseHermesCallStack(rawStack);
+const isV8ProductionCallStack = () => {
+  return !__DEV__ && Platform.OS == 'android' && ! isHermesCallStack();
+};;
+
+const getErrorParser = function() {
+  if (isV8DebugCallStack()) {
+    console.log("IS V8 DEBUG");
+    return ErrorParser.V8_DEBUG;
+  }
+  else if (isV8ProductionCallStack()) {
+    console.log("IS V8 PRODUCTION");
+    return ErrorParser.V8_PRODUCTION;
   }
   else {
-    console.log("NOT HERMES");
+    console.error("UNABLE TO FIND PARSING PATTERN");
+  }
+};
+
+const getErrorParserName = function(parser) {
+  switch(parser){
+    case ErrorParser.V8_DEBUG: return "v8 debug";
+    case ErrorParser.V8_PRODUCTION: return "v8 production";
   }
 
-  console.error("SHOULD NOT BE HERE");
-
-  console.log("Filtered Lines:", filtered);
-
-  return filtered.map(function(line) {
-    
-    if (line.indexOf('(eval ') > -1) {
-      // Throw away eval information until we implement stacktrace.js/stackframe#8
-      line = line.replace(/eval code/g, 'eval').replace(/(\(eval at [^()]*)|(\),.*$)/g, '');
-    }
-    
-    var sanitizedLine = line.replace(/^\s+/, '').replace(/\(eval code/g, '(');
-
-    // capture and preseve the parenthesized location "(/foo/my bar.js:12:87)" in
-    // case it has spaces in it, as the string is split on \s+ later on
-    var location = sanitizedLine.match(/ (\((.+):(\d+):(\d+)\)$)/);
-
-    // remove the parenthesized location from the line, if it was matched
-    sanitizedLine = location ? sanitizedLine.replace(location[0], '') : sanitizedLine;
-
-    var tokens = sanitizedLine.split(/\s+/).slice(1);
-    // if a location was matched, pass it to extractLocation() otherwise pop the last token
-    var locationParts = extractLocation(location ? location[1] : tokens.pop());
-    var functionName = tokens.join(' ') || undefined;
-    var fileName = ['eval', '<anonymous>'].indexOf(locationParts[0]) > -1 ? undefined : locationParts[0];
-
-    console.log(functionName, fileName, locationParts[1], locationParts[2], line);
-
-    return {
-      functionName: functionName,
-      fileName: fileName,
-      lineNumber: locationParts[1],
-      columnNumber: locationParts[2],
-      source: line,
-    };
-  }, this);
+  return "UNKNOWN";
 };
 
-const HERMES_ERROR_PATTERN = /^(.*)@(\D+:\d*\D+):(\d+):(\d+)$/;
+const parseError = function(error, pattern) {
 
-const isHermesCallStack = function(stack) {
-
-  const isHermes = () => global.HermesInternal != null;
-  return isHermes;
-
-  // return stack.filter(function(line) {
-  //   return !!line.match(HERMES_ERROR_PATTERN);
-  // }, this).length > 0;
-};
-
-const parseHermesCallStack = function(stack) {
-
-  console.log("PARSING HERMES");
-
+  const stack = error.stack.split("\n");
+  console.log(stack);
   return stack
     // For now, filter out lines that don't follow the happy path
     .filter(function(line){
       return line.indexOf("[native code]") == -1;
     })
     .map(function(line) {
-      return line.match( HERMES_ERROR_PATTERN );
+      return line.match( pattern );
     })
     .filter(function(matches){
       return matches !== null;
@@ -154,13 +138,21 @@ const parseHermesCallStack = function(stack) {
     });
 };
 
-ErrorUtils.setGlobalHandler( function( error ) {
-  parseErrorStack( error )
-    .then( transmitErrorStack )
-    .catch( ( error ) => {
-      console.error( 'Error while dealing with error: ', error );
-    });
-} );
+ErrorUtils.setGlobalHandler( async function( error ) {
+
+  const parser = getErrorParser();
+  const errorStack = await parseError( error, parser );
+
+  transmitObject({
+    'parser': getErrorParserName( parser ),
+    'errorStack': errorStack,
+    'foo': 'bar',
+    'rawStack': error.stack,
+  })
+  .catch( ( error ) => {
+    console.error( 'Error while dealing with error: ', error );
+  });
+});
 
 const App: () => React$Node = () => {
   return (
