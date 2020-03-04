@@ -7,13 +7,15 @@
     "ios": "react-native run-ios",
     "start": "react-native start",
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "bundle:android": "mkdir -p bundle/android && react-native bundle --platform android --dev false --entry-file index.js --assets-dest bundle/android --bundle-output bundle/android/App.js --sourcemap-output bundle/android/App.js.map",
+    "bundle:ios": "mkdir -p bundle/ios && react-native bundle --platform ios --dev false --entry-file index.js --assets-dest bundle/ios --bundle-output bundle/ios/App.js --sourcemap-output bundle/ios/App.js.map"
+
   },
   "dependencies": {
     "buffer": "^5.4.3",
     "react": "16.9.0",
-    "react-native": "0.61.2",
-    "source-map": "^0.8"
+    "react-native": "0.61.2"
   },
   "devDependencies": {
     "@babel/core": "^7.6.4",
