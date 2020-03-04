@@ -8,9 +8,8 @@
     "start": "react-native start",
     "test": "jest",
     "lint": "eslint .",
-    "bundle:android": "mkdir -p bundle/android && react-native bundle --platform android --dev false --entry-file index.js --assets-dest bundle/android --bundle-output bundle/android/App.js --sourcemap-output bundle/android/App.js.map",
+    "bundle:android": "rm -rf android/app/build && rm -rf bundle/android && mkdir -p bundle/android && cd android && ./gradlew assembleRelease && cd .. && cp android/app/build/generated/sourcemaps/react/release/index.android.bundle.map bundle/android/index.android.bundle.map && cp android/app/build/generated/assets/react/release/index.android.bundle bundle/android/index.android.bundle.js && cp android/app/build/outputs/apk/release/app-release.apk bundle/android/app.apk",
     "bundle:ios": "mkdir -p bundle/ios && react-native bundle --platform ios --dev false --entry-file index.js --assets-dest bundle/ios --bundle-output bundle/ios/App.js --sourcemap-output bundle/ios/App.js.map"
-
   },
   "dependencies": {
     "buffer": "^5.4.3",
