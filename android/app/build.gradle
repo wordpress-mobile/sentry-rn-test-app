@@ -1,9 +1,10 @@
-apply plugin: "com.android.application"
-
-import com.android.build.OutputFile
 plugins {
     id 'com.gladed.androidgitversion' version '0.4.13'
 }
+
+apply plugin: "com.android.application"
+
+import com.android.build.OutputFile
 
 /**
  * The react.gradle file registers a task for each build variant (e.g. bundleDebugJsAndAssets
@@ -200,6 +201,12 @@ dependencies {
 task copyDownloadableDepsToLibs(type: Copy) {
     from configurations.compile
     into 'libs'
+}
+
+task printVersionName {
+    doLast {
+        println android.defaultConfig.versionName
+    }
 }
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
